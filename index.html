@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Perangkingan UTBK - SMA Ar Rahmat</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- SheetJS untuk membaca file Excel -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .badge-gold { background: linear-gradient(135deg, #F59E0B, #D97706); color: white; }
+    .badge-silver { background: linear-gradient(135deg, #9CA3AF, #4B5563); color: white; }
+    .badge-bronze { background: linear-gradient(135deg, #D97706, #78350F); color: white; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+  <!-- Header & Navbar -->
+  <header class="bg-emerald-800 text-white shadow-lg sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div class="flex items-center gap-3">
+        <div class="p-2.5 bg-emerald-700 rounded-xl shadow-inner">
+          <i data-lucide="award" class="w-8 h-8 text-amber-300"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight">SMA AR RAHMAT</h1>
+          <p class="text-xs text-emerald-200">Portal Perangkingan & Evaluasi Tryout UTBK SNBT</p>
+        </div>
+      </div>
+      
+      <!-- Upload Excel & Quick Action -->
+      <div class="flex items-center gap-2">
+        <label for="excel-upload" class="cursor-pointer bg-emerald-700 hover:bg-emerald-600 text-white text-xs sm:text-sm font-medium px-4 py-2.5 rounded-lg border border-emerald-600 transition flex items-center gap-2 shadow-sm">
+          <i data-lucide="file-up" class="w-4 h-4 text-emerald-200"></i>
+          <span>Update Data Excel</span>
+          <input type="file" id="excel-upload" accept=".xlsx, .xls" class="hidden">
+        </label>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+
+    <!-- Overview / Stats Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Peserta</p>
+          <h3 id="stat-total-siswa" class="text-2xl font-bold text-slate-900 mt-1">0</h3>
+        </div>
+        <div class="p-3 bg-blue-50 text-blue-600 rounded-xl">
+          <i data-lucide="users" class="w-6 h-6"></i>
+        </div>
+      </div>
+
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Nilai Tertinggi</p>
+          <h3 id="stat-max-score" class="text-2xl font-bold text-emerald-600 mt-1">0</h3>
+        </div>
+        <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+          <i data-lucide="trophy" class="w-6 h-6"></i>
+        </div>
+      </div>
+
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Rata-Rata Angkatan</p>
+          <h3 id="stat-avg-score" class="text-2xl font-bold text-slate-900 mt-1">0</h3>
+        </div>
+        <div class="p-3 bg-amber-50 text-amber-600 rounded-xl">
+          <i data-lucide="calculator" class="w-6 h-6"></i>
+        </div>
+      </div>
+
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tryout Terpenuhi</p>
+          <h3 id="stat-to-count" class="text-2xl font-bold text-indigo-600 mt-1">TO 1 & 2</h3>
+        </div>
+        <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+          <i data-lucide="calendar" class="w-6 h-6"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top 3 Podium (Landing Highlight) -->
+    <div class="mb-8 bg-gradient-to-br from-emerald-900 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
+      <div class="absolute -right-10 -bottom-10 opacity-10 pointer-events-none">
+        <i data-lucide="award" class="w-96 h-96"></i>
+      </div>
+      <h2 class="text-lg sm:text-xl font-bold mb-6 flex items-center gap-2 text-amber-400">
+        <i data-lucide="sparkles" class="w-5 h-5"></i>
+        Peringkat Teratas (Top Performance)
+      </h2>
+      <div id="podium-container" class="grid grid-cols-1 md:grid-cols-3 gap-4 relative z-10">
+        <!-- Generates Top 3 Cards dynamically -->
+      </div>
+    </div>
+
+    <!-- Controls & Filters Section -->
+    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-6 flex flex-col md:flex-row gap-4 justify-between items-center">
+      <div class="relative w-full md:w-80">
+        <i data-lucide="search" class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <input type="text" id="search-input" placeholder="Cari nama santri..." class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition">
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
+        <!-- Filter Kelas -->
+        <div class="flex items-center gap-2">
+          <label class="text-xs font-medium text-slate-500">Kelas:</label>
+          <select id="filter-kelas" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <option value="ALL">Semua Kelas</option>
+            <option value="12A">12 A</option>
+            <option value="12B">12 B</option>
+            <option value="12C">12 C</option>
+          </select>
+        </div>
+
+        <!-- Mode Acuan Rangking -->
+        <div class="flex items-center gap-2">
+          <label class="text-xs font-medium text-slate-500">Urutkan Berdasar:</label>
+          <select id="sort-mode" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <option value="AVG">Rata-Rata Tryout</option>
+            <option value="TOTAL">Jumlah Nilai (Total)</option>
+            <option value="TO1">Nilai Tryout 1</option>
+            <option value="TO2">Nilai Tryout 2</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ranking Table -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-sm">
+          <thead>
+            <tr class="bg-slate-100 text-slate-600 font-semibold uppercase text-[11px] tracking-wider border-b border-slate-200">
+              <th class="py-4 px-4 text-center w-16">Rank</th>
+              <th class="py-4 px-4">Nama Santri</th>
+              <th class="py-4 px-4 text-center">Kelas</th>
+              <th class="py-4 px-4 text-center">TO 1</th>
+              <th class="py-4 px-4 text-center">TO 2</th>
+              <th class="py-4 px-4 text-center font-bold text-slate-800">Rata-Rata</th>
+              <th class="py-4 px-4 text-center font-bold text-emerald-800">Total Skor</th>
+              <th class="py-4 px-4 text-center">Tren</th>
+            </tr>
+          </thead>
+          <tbody id="ranking-table-body" class="divide-y divide-slate-100">
+            <!-- Dynamic Rows -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-slate-900 text-slate-400 text-xs py-6 mt-12 border-t border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 text-center space-y-2">
+      <p class="font-medium text-slate-300">SMA Ar Rahmat - Sistem Monitoring & Ranking UTBK SNBT</p>
+      <p>Data diperbarui secara terintegrasi berdasarkan rekapitulasi penilaian berkala.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Data bawaan dari file Excel BISMILLAH UTBK 2027.xlsx (77 Santri)
+    let initialData = [
+      {"no": 1, "nama": "ABHYASA AMMAAR SANTOSO", "kelas": "12B", "to1": 656, "to2": 599},
+      {"no": 2, "nama": "ADITYA AKMAL NUGRAHA", "kelas": "12A", "to1": 594, "to2": 561},
+      {"no": 3, "nama": "AHMAD FAISAL FATONY", "kelas": "12B", "to1": 516, "to2": 539},
+      {"no": 4, "nama": "AHMAD FAIZIN RAMADANI", "kelas": "12B", "to1": 560, "to2": 540},
+      {"no": 5, "nama": "AHMAD FASHIHUL BURHAN MAULUDI", "kelas": "12A", "to1": 463, "to2": 465},
+      {"no": 6, "nama": "AHMAD LUTHFI AHDA HADI PRADANA", "kelas": "12B", "to1": 578, "to2": 548},
+      {"no": 7, "nama": "AHYANA SALMAN FADLILA", "kelas": "12B", "to1": 519, "to2": 635},
+      {"no": 8, "nama": "AIZAR RIFQI UBAIDILLAH", "kelas": "12B", "to1": 561, "to2": 549},
+      {"no": 9, "nama": "ALTHAF SHAREEF SETIAWAN", "kelas": "12A", "to1": 620, "to2": 604},
+      {"no": 10, "nama": "ALVIAN ARDIANTO", "kelas": "12C", "to1": 536, "to2": 513},
+      {"no": 11, "nama": "ANDREA RAFA EVANDANA", "kelas": "12B", "to1": 473, "to2": 461},
+      {"no": 12, "nama": "ARDHAN FAUZAN AMIN", "kelas": "12C", "to1": 564, "to2": 522},
+      {"no": 13, "nama": "ARDHI PRABU SANTOSO", "kelas": "12C", "to1": 535, "to2": 533},
+      {"no": 14, "nama": "AZRA FATHUR RAMADHANY", "kelas": "12B", "to1": null, "to2": 579},
+      {"no": 15, "nama": "AZZIZ CAHAYA LANGIT", "kelas": "12C", "to1": 566, "to2": 574},
+      {"no": 16, "nama": "DAI BRAIN ALFAHREZI DINAN", "kelas": "12A", "to1": null, "to2": 548},
+      {"no": 17, "nama": "DHIO SYAILENDRA", "kelas": "12B", "to1": 633, "to2": 613},
+      {"no": 18, "nama": "DZAKWAN ARFINDO PURNAMA PUTRA", "kelas": "12B", "to1": 515, "to2": 493},
+      {"no": 19, "nama": "ELVO AZZAMI JUE AL AKBAR", "kelas": "12C", "to1": null, "to2": 454},
+      {"no": 20, "nama": "EVAN TEGAR BAGASKARA BASTAM", "kelas": "12A", "to1": 638, "to2": 658},
+      {"no": 21, "nama": "FAIRUZ RAHMAN", "kelas": "12C", "to1": 486, "to2": 514},
+      {"no": 22, "nama": "FAKHRI AMRU KAYSAN FATTAN JUNAIDI", "kelas": "12B", "to1": 476, "to2": 525},
+      {"no": 23, "nama": "FAWWAZ AKMAL NASYWAN", "kelas": "12A", "to1": 514, "to2": 528},
+      {"no": 24, "nama": "GHOZIAN RAFA HIBATUL AZIZI", "kelas": "12C", "to1": 616, "to2": 645},
+      {"no": 25, "nama": "GHULAM AZAM ANNABIL", "kelas": "12A", "to1": 666, "to2": 673},
+      {"no": 26, "nama": "HABIB AHMAD RUSYDUDDIN", "kelas": "12A", "to1": 499, "to2": 486},
+      {"no": 27, "nama": "HABIB NUR RAUHILLAH", "kelas": "12A", "to1": 549, "to2": 566},
+      {"no": 28, "nama": "HAIDAR FAWWAZ ALFAKHRY", "kelas": "12B", "to1": 537, "to2": 524},
+      {"no": 29, "nama": "HELGA AZKA HERMAWAN", "kelas": "12C", "to1": 489, "to2": 534},
+      {"no": 30, "nama": "ILYASA LINTANGAJI WAHYUDO", "kelas": "12C", "to1": 644, "to2": 596},
+      {"no": 31, "nama": "IN'AAM FAWWAZ HAKIM", "kelas": "12B", "to1": 467, "to2": 564},
+      {"no": 32, "nama": "JHIRO CHAKA NAUFAL AQUENO", "kelas": "12C", "to1": 434, "to2": 540},
+      {"no": 33, "nama": "JOFFY ZACKIE ALFIANSYAH", "kelas": "12A", "to1": 540, "to2": 477},
+      {"no": 34, "nama": "KARA IELM RABBANIY", "kelas": "12C", "to1": 546, "to2": 545},
+      {"no": 35, "nama": "KEVIN SURYADINATA", "kelas": "12A", "to1": 597, "to2": 616},
+      {"no": 36, "nama": "LINGGAR BIMANTARA BUDI NUGROHO", "kelas": "12C", "to1": 595, "to2": 584},
+      {"no": 37, "nama": "M NADHIF ILMA NAFI'", "kelas": "12C", "to1": 492, "to2": 525},
+      {"no": 38, "nama": "M. FAISAL FAHRI", "kelas": "12A", "to1": 501, "to2": 525},
+      {"no": 39, "nama": "M.KAMIL ALKIBARI", "kelas": "12A", "to1": 468, "to2": 517},
+      {"no": 40, "nama": "MARSEL DWI NUR SAPUTRA", "kelas": "12A", "to1": 539, "to2": 563},
+      {"no": 41, "nama": "MOCH BACHTIAR SATYA PERMANA", "kelas": "12A", "to1": null, "to2": 536},
+      {"no": 42, "nama": "MOCH.DITTO DARMAWAN", "kelas": "12A", "to1": 589, "to2": 565},
+      {"no": 43, "nama": "MUH. ALFI SYAHR", "kelas": "12C", "to1": 473, "to2": 514},
+      {"no": 44, "nama": "MUHAMMAD ARYASATYA NUGRAHA ANDRIAN", "kelas": "12B", "to1": null, "to2": 549},
+      {"no": 45, "nama": "MUHAMMAD ATTAR ARIFIYANSYAH", "kelas": "12B", "to1": 454, "to2": 469},
+      {"no": 46, "nama": "MUHAMMAD AZZAM AL FAWWAZ", "kelas": "12A", "to1": 499, "to2": 542},
+      {"no": 47, "nama": "MUHAMMAD DIMAS KURNIAWAN", "kelas": "12C", "to1": 537, "to2": 535},
+      {"no": 48, "nama": "MUHAMMAD FARUZUL WAFI FARADIS", "kelas": "12A", "to1": 434, "to2": null},
+      {"no": 49, "nama": "MUHAMMAD FATHAN AZRUL GUNAWAN", "kelas": "12C", "to1": 544, "to2": 444},
+      {"no": 50, "nama": "MUHAMMAD FIKRI AMRULLAH SYAFI'I", "kelas": "12B", "to1": 441, "to2": 438},
+      {"no": 51, "nama": "MUHAMMAD FIRDAUS AL JAVIER", "kelas": "12A", "to1": 520, "to2": 513},
+      {"no": 52, "nama": "MUHAMMAD HANIF AL GHIFARI", "kelas": "12A", "to1": 625, "to2": 660},
+      {"no": 53, "nama": "MUHAMMAD JAVA NARENDRA ABDILLAH", "kelas": "12B", "to1": null, "to2": 564},
+      {"no": 54, "nama": "MUHAMMAD MIKA'IL AZIZI", "kelas": "12A", "to1": 482, "to2": 506},
+      {"no": 55, "nama": "MUHAMMAD QONIT AUFA DLIYAUL LAH", "kelas": "12A", "to1": 533, "to2": 563},
+      {"no": 56, "nama": "MUHAMMAD RAFEL DWI KURNIAWAN", "kelas": "12C", "to1": 574, "to2": 624},
+      {"no": 57, "nama": "MUHAMMAD RAFI ZAKIA", "kelas": "12A", "to1": 553, "to2": 574},
+      {"no": 58, "nama": "MUHAMMAD RAYHAN NUR ABIDIN", "kelas": "12A", "to1": 548, "to2": 541},
+      {"no": 59, "nama": "MUHAMMAD WAHYU PRATAMA", "kelas": "12C", "to1": null, "to2": 537},
+      {"no": 60, "nama": "NADHIFAN RIZKY AZIZAKY", "kelas": "12B", "to1": 544, "to2": 542},
+      {"no": 61, "nama": "NAUVAL RASYAAD", "kelas": "12C", "to1": 554, "to2": 590},
+      {"no": 62, "nama": "NUR RAHMATULLAH", "kelas": "12B", "to1": 436, "to2": 478},
+      {"no": 63, "nama": "RADHIF AHMAD AL AZZAM", "kelas": "12B", "to1": 492, "to2": 482},
+      {"no": 64, "nama": "RAIHAN ARIQ MU'AFA", "kelas": "12B", "to1": 558, "to2": 573},
+      {"no": 65, "nama": "RAIHAN FIRDAUS", "kelas": "12B", "to1": 439, "to2": 432},
+      {"no": 66, "nama": "RAIHAN HARSYA FAHRUDIN", "kelas": "12A", "to1": 570, "to2": 562},
+      {"no": 67, "nama": "RAKHANSA CAESAR MAULIDAN", "kelas": "12A", "to1": 501, "to2": 490},
+      {"no": 68, "nama": "RASHYA PRAWIRA SASRA", "kelas": "12B", "to1": 526, "to2": 551},
+      {"no": 69, "nama": "RAYNAR FARRAS KURNIA PUTRA", "kelas": "12B", "to1": 575, "to2": 598},
+      {"no": 70, "nama": "RIFQI ADHITYA DWI MARDHIANTO", "kelas": "12B", "to1": 608, "to2": 627},
+      {"no": 71, "nama": "ROBBY HUDAN MAHARDIKA", "kelas": "12B", "to1": 485, "to2": 522},
+      {"no": 72, "nama": "SATRIAJI DHIAURRAHMAN", "kelas": "12B", "to1": null, "to2": 484},
+      {"no": 73, "nama": "SYAHDAN NAUFAL AQILA KAMAL", "kelas": "12A", "to1": 508, "to2": 482},
+      {"no": 74, "nama": "SYAHRIL FAHRI", "kelas": "12A", "to1": 502, "to2": 521},
+      {"no": 75, "nama": "YUSDITYA PATOEH MAULANA", "kelas": "12A", "to1": 565, "to2": 554},
+      {"no": 76, "nama": "ZIVEN AN-NAZAL RAHMANDHAWIDYA", "kelas": "12C", "to1": 495, "to2": 506},
+      {"no": 77, "nama": "ZIYADA MAULA ALFARIZ", "kelas": "12A", "to1": 455, "to2": 420}
+    ];
+
+    let currentData = [...initialData];
+
+    // Format & Calculate Metrics
+    function processData(items) {
+      return items.map(s => {
+        let scores = [s.to1, s.to2, s.to3].filter(v => v !== null && v !== undefined && !isNaN(v));
+        let total = scores.reduce((a, b) => a + b, 0);
+        let avg = scores.length > 0 ? (total / scores.length) : 0;
+        
+        let trend = 'same';
+        if (s.to1 && s.to2) {
+          if (s.to2 > s.to1) trend = 'up';
+          else if (s.to2 < s.to1) trend = 'down';
+        }
+
+        return {
+          ...s,
+          totalScore: total,
+          avgScore: parseFloat(avg.toFixed(1)),
+          trend: trend
+        };
+      });
+    }
+
+    // Render Function
+    function renderDashboard() {
+      let searchVal = document.getElementById('search-input').value.toLowerCase();
+      let filterKelas = document.getElementById('filter-kelas').value;
+      let sortMode = document.getElementById('sort-mode').value;
+
+      let processed = processData(currentData);
+
+      // Filter
+      let filtered = processed.filter(item => {
+        let matchName = item.nama.toLowerCase().includes(searchVal);
+        let matchKelas = filterKelas === 'ALL' || item.kelas === filterKelas;
+        return matchName && matchKelas;
+      });
+
+      // Sort
+      filtered.sort((a, b) => {
+        if (sortMode === 'AVG') return b.avgScore - a.avgScore;
+        if (sortMode === 'TOTAL') return b.totalScore - a.totalScore;
+        if (sortMode === 'TO1') return (b.to1 || 0) - (a.to1 || 0);
+        if (sortMode === 'TO2') return (b.to2 || 0) - (a.to2 || 0);
+        return 0;
+      });
+
+      // Stats Update
+      document.getElementById('stat-total-siswa').innerText = filtered.length;
+      let maxScore = filtered.length > 0 ? Math.max(...filtered.map(f => f.avgScore)) : 0;
+      document.getElementById('stat-max-score').innerText = maxScore;
+      let grandAvg = filtered.length > 0 ? (filtered.reduce((a, b) => a + b.avgScore, 0) / filtered.length).toFixed(1) : 0;
+      document.getElementById('stat-avg-score').innerText = grandAvg;
+
+      // Render Top 3 Podium
+      renderPodium(filtered.slice(0, 3));
+
+      // Render Table
+      renderTable(filtered);
+
+      // Re-initialize Lucide Icons
+      lucide.createIcons();
+    }
+
+    function renderPodium(top3) {
+      let podiumContainer = document.getElementById('podium-container');
+      podiumContainer.innerHTML = '';
+
+      if (top3.length === 0) {
+        podiumContainer.innerHTML = `<p class="text-slate-400 col-span-3 text-center py-4">Tidak ada data ditemukan</p>`;
+        return;
+      }
+
+      let badgeClasses = ['badge-gold', 'badge-silver', 'badge-bronze'];
+      let ranks = ['JUARA 1', 'JUARA 2', 'JUARA 3'];
+
+      top3.forEach((s, idx) => {
+        let card = document.createElement('div');
+        card.className = "bg-slate-800/80 border border-slate-700/60 rounded-2xl p-5 backdrop-blur-sm relative overflow-hidden flex flex-col justify-between";
+        card.innerHTML = `
+          <div>
+            <div class="flex justify-between items-center mb-3">
+              <span class="text-[10px] font-extrabold tracking-wider px-2.5 py-1 rounded-full ${badgeClasses[idx]}">${ranks[idx]}</span>
+              <span class="text-xs font-semibold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-800/50">${s.kelas}</span>
+            </div>
+            <h3 class="font-bold text-base text-white line-clamp-1 mb-1">${s.nama}</h3>
+            <p class="text-xs text-slate-400">Rata-Rata Tryout</p>
+          </div>
+          <div class="mt-4 flex items-baseline justify-between border-t border-slate-700/50 pt-3">
+            <span class="text-3xl font-black text-amber-300">${s.avgScore}</span>
+            <span class="text-xs text-slate-400">Total: <strong class="text-slate-200">${s.totalScore}</strong> pts</span>
+          </div>
+        `;
+        podiumContainer.appendChild(card);
+      });
+    }
+
+    function renderTable(data) {
+      let tbody = document.getElementById('ranking-table-body');
+      tbody.innerHTML = '';
+
+      if (data.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" class="text-center py-8 text-slate-400">
+              Tidak ada data santri yang sesuai dengan pencarian.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      data.forEach((s, idx) => {
+        let rankNumber = idx + 1;
+        let rankBadge = `<span class="font-bold text-slate-600">${rankNumber}</span>`;
+        
+        if (rankNumber === 1) rankBadge = `<span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-100 text-amber-700 font-bold text-xs shadow-sm">1</span>`;
+        else if (rankNumber === 2) rankBadge = `<span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-200 text-slate-700 font-bold text-xs shadow-sm">2</span>`;
+        else if (rankNumber === 3) rankBadge = `<span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-800/20 text-amber-800 font-bold text-xs shadow-sm">3</span>`;
+
+        let trendIcon = `<span class="text-slate-300">-</span>`;
+        if (s.trend === 'up') trendIcon = `<span class="text-emerald-600 inline-flex items-center gap-0.5 text-xs font-semibold"><i data-lucide="trending-up" class="w-4 h-4"></i> Naik</span>`;
+        else if (s.trend === 'down') trendIcon = `<span class="text-rose-500 inline-flex items-center gap-0.5 text-xs font-semibold"><i data-lucide="trending-down" class="w-4 h-4"></i> Turun</span>`;
+
+        let tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50/80 transition border-b border-slate-100";
+        tr.innerHTML = `
+          <td class="py-3.5 px-4 text-center">${rankBadge}</td>
+          <td class="py-3.5 px-4 font-semibold text-slate-800">${s.nama}</td>
+          <td class="py-3.5 px-4 text-center">
+            <span class="inline-block px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-xs font-medium">${s.kelas}</span>
+          </td>
+          <td class="py-3.5 px-4 text-center text-slate-600">${s.to1 !== null ? s.to1 : '<span class="text-slate-300">-</span>'}</td>
+          <td class="py-3.5 px-4 text-center text-slate-600">${s.to2 !== null ? s.to2 : '<span class="text-slate-300">-</span>'}</td>
+          <td class="py-3.5 px-4 text-center font-bold text-slate-900">${s.avgScore}</td>
+          <td class="py-3.5 px-4 text-center font-bold text-emerald-600 bg-emerald-50/30">${s.totalScore}</td>
+          <td class="py-3.5 px-4 text-center">${trendIcon}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Excel Upload Parsing
+    document.getElementById('excel-upload').addEventListener('change', function(e) {
+      let file = e.target.files[0];
+      if (!file) return;
+
+      let reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          let data = new Uint8Array(evt.target.result);
+          let workbook = XLSX.read(data, {type: 'array'});
+          let firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          let jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+
+          // Parse Header & Rows
+          let newData = [];
+          for (let r = 1; r < jsonData.length; r++) {
+            let row = jsonData[r];
+            if (row && row[1]) {
+              newData.push({
+                no: row[0] || r,
+                nama: String(row[1]).trim(),
+                kelas: row[2] ? String(row[2]).trim() : '-',
+                to1: row[5] && !isNaN(row[5]) ? Number(row[5]) : null,
+                to2: row[6] && !isNaN(row[6]) ? Number(row[6]) : null,
+                to3: row[7] && !isNaN(row[7]) ? Number(row[7]) : null
+              });
+            }
+          }
+
+          if (newData.length > 0) {
+            currentData = newData;
+            renderDashboard();
+            alert(`Berhasil mengunggah dan memperbarui ${newData.length} data santri dari Excel!`);
+          } else {
+            alert('Format Excel tidak sesuai. Pastikan kolom sesuai dengan template.');
+          }
+        } catch (err) {
+          alert('Gagal membaca file Excel. Pastikan file dalam format .xlsx atau .xls');
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    // Event Listeners Filter
+    document.getElementById('search-input').addEventListener('input', renderDashboard);
+    document.getElementById('filter-kelas').addEventListener('change', renderDashboard);
+    document.getElementById('sort-mode').addEventListener('change', renderDashboard);
+
+    // Initial Init
+    window.addEventListener('DOMContentLoaded', () => {
+      renderDashboard();
+    });
+  </script>
+</body>
+</html>
